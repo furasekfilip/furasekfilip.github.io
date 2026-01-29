@@ -35,7 +35,7 @@
       z-index: 0;
     }
 
-    /* Button */
+    /* Centered button */
     md-filled-button {
       font-size: 24px;
       padding: 20px 40px;
@@ -45,17 +45,6 @@
       cursor: pointer;
       z-index: 2;
       position: relative;
-    }
-
-    /* Overlay video stretched */
-    #overlayVideo {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 9999;
-      display: none; /* hide initially */
     }
   </style>
 </head>
@@ -68,16 +57,9 @@
   <!-- Centered button -->
   <md-filled-button onclick="playRickroll()">Click me</md-filled-button>
 
-  <!-- Overlay Rickroll video -->
-  <video id="overlayVideo" loop>
-    <source src="https://i.imgur.com/jpLPqmt.mp4" type="video/mp4">
-  </video>
-
   <script>
     async function playRickroll() {
-      const overlay = document.getElementById('overlayVideo');
-
-      // Fullscreen the browser
+      // Fullscreen browser
       if (!document.fullscreenElement) {
         try {
           await document.documentElement.requestFullscreen();
@@ -86,9 +68,21 @@
         }
       }
 
-      // Show the overlay video and play it with sound
-      overlay.style.display = 'block';
-      overlay.muted = false; // unmute
+      // Create overlay video dynamically
+      const overlay = document.createElement('video');
+      overlay.src = "https://i.imgur.com/jpLPqmt.mp4";
+      overlay.loop = true;
+      overlay.muted = false; // play sound
+      overlay.autoplay = true;
+      overlay.style.position = "fixed";
+      overlay.style.top = "0";
+      overlay.style.left = "0";
+      overlay.style.width = "100vw";
+      overlay.style.height = "100vh";
+      overlay.style.zIndex = "9999";
+
+      // Add to body and play
+      document.body.appendChild(overlay);
       overlay.play();
     }
   </script>
