@@ -1,95 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>XP in Browser 🌈</title>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
-<style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GoldSrc Game – Xash3D Web (Hosted files.data)</title>
+  <style>
     body {
-        margin: 0;
-        background: #222;
-        font-family: 'Roboto', sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        overflow: hidden;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: #000;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #eee;
     }
-    #xp-container {
-        position: relative;
+    #canvas {
+      width: 100vw;
+      height: 100vh;
+      display: block;
     }
-    canvas {
-        border: 2px solid #555;
-        width: 1024px;
-        height: 768px;
-        background: #000;
-        display: block;
+    #ui {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      padding: 12px 20px;
+      background: rgba(0,0,0,0.6);
+      z-index: 10;
+      pointer-events: none;
+      user-select: none;
+      font-size: 1.1rem;
+      text-shadow: 1px 1px 3px #000;
     }
-    /* Material 3 style start button */
-    #start-button {
-        position: absolute;
-        bottom: 20px;
-        left: 20px;
-        background: #6200EE;
-        color: white;
-        font-weight: 500;
-        padding: 12px 20px;
-        border-radius: 20px;
-        border: none;
-        cursor: pointer;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        transition: all 0.2s ease;
+    #loading {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #111;
+      font-size: 2rem;
+      z-index: 20;
     }
-    #start-button:hover {
-        background: #3700B3;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    #error {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: #300;
+      font-size: 1.6rem;
+      color: #ff6666;
+      z-index: 20;
+      padding: 20px;
+      text-align: center;
     }
-</style>
+  </style>
 </head>
 <body>
 
-<div id="xp-container">
-    <canvas id="screen"></canvas>
-    <button id="start-button">Start</button>
+<div id="ui">
+  GoldSrc via Xash3D • Press ESC to release mouse • WASD + mouse to play
 </div>
 
-<script src="https://copy.sh/v86/build/v86.js"></script>
+<div id="loading">
+  <div>Loading engine & game data…</div>
+  <div style="margin-top:20px; font-size:1.1rem; opacity:0.8;">
+    First load can take 30–180 seconds depending on connection
+  </div>
+</div>
+
+<div id="error">
+  <div style="font-size:2.2rem; margin-bottom:20px;">Something went wrong</div>
+  <div id="errorMsg"></div>
+</div>
+
+<canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+
 <script>
-    let emulator = null;
+// =======================================================
+//   CHANGE ONLY THESE TWO LINES WITH YOUR OWN LINKS
+// =======================================================
+const GAME_DATA_URL = "https://files.catbox.moe/yourfiles.data";     // ← your hosted .data file
+const GAME_PRELOAD_JS = "https://files.catbox.moe/yourpreload.js";   // ← if you have a custom .js, otherwise leave as fallback
 
-    const startButton = document.getElementById("start-button");
-    const canvas = document.getElementById("screen");
+// Fallback to public preloader if you don't have custom .js
+const FALLBACK_PRELOAD = "https://x8bitrain.github.io/webXash/xash3d.js";
 
-    function bootEmulator() {
-        if (emulator) {
-            console.log("Emulator already running!");
-            return;
-        }
+// Engine configuration
+window.Module = {
+  canvas: document.getElementById('canvas'),
+  print:   txt => console.log("[Xash3D]", txt),
+  printErr: txt => console.error("[Xash3D Error]", txt),
 
-        emulator = new V86Starter({
-            wasm_path: "https://copy.sh/v86/build/v86.wasm",
-            memory_size: 512 * 1024 * 1024, // 512MB RAM
-            vga_memory_size: 8 * 1024 * 1024,
-            screen_container: canvas,
-            bios: { url: "https://copy.sh/v86/bios/seabios.bin" },
-            vga_bios: { url: "https://copy.sh/v86/bios/vgabios.bin" },
-            hda: { url: "YOUR_XP_IMAGE_URL_HERE" }, // <-- put your hosted XP disk image link
-            autostart: true
-        });
+  preRun:   [],
+  postRun:  [() => document.getElementById('loading').style.display = 'none'],
 
-        emulator.add_listener("emulator-ready", () => {
-            console.log("XP Emulator ready!");
-        });
-    }
+  // Tell Emscripten to load your .data file from URL
+  locateFile: function(path, scriptDirectory) {
+    if (path.endsWith('.data')) return GAME_DATA_URL;
+    return scriptDirectory + path;
+  },
 
-    // Start button powers on the emulator
-    startButton.addEventListener("click", bootEmulator);
+  // Optional: arguments passed to engine
+  arguments: [
+    // "-dev", "1",               // developer mode
+    // "+map", "de_dust2",        // start map (if you want auto-load)
+    // "+sv_cheats", "1"
+  ]
+};
 
-    // Click canvas to capture keyboard/mouse input
-    canvas.addEventListener("click", () => {
-        canvas.focus();
-    });
+// Show loading
+const loading = document.getElementById('loading');
+const errorDiv = document.getElementById('error');
+const errorMsg = document.getElementById('errorMsg');
+
+// Load the preloader script
+const preloadSrc = GAME_PRELOAD_JS || FALLBACK_PRELOAD;
+
+const script = document.createElement('script');
+script.src = preloadSrc;
+script.async = true;
+
+script.onload = () => {
+  loading.innerHTML = "Engine loaded… downloading game data…<br>(this can take a while)";
+};
+
+script.onerror = (e) => {
+  loading.style.display = 'none';
+  errorDiv.style.display = 'flex';
+  errorMsg.innerHTML = `
+    Failed to load Xash3D engine.<br><br>
+    <small>Check console (F12) for details.<br>
+    Make sure your .js / .data links are correct and publicly accessible.</small>
+  `;
+  console.error("Preload script failed:", e);
+};
+
+document.body.appendChild(script);
 </script>
-
 </body>
 </html>
