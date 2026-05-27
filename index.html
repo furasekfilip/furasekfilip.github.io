@@ -1,142 +1,174 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GoldSrc Game – Xash3D Web (Hosted files.data)</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kahoot Answer Finder</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      background: #000;
-      font-family: Arial, Helvetica, sans-serif;
-      color: #eee;
-    }
-    #canvas {
-      width: 100vw;
-      height: 100vh;
-      display: block;
-    }
-    #ui {
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      padding: 12px 20px;
-      background: rgba(0,0,0,0.6);
-      z-index: 10;
-      pointer-events: none;
-      user-select: none;
-      font-size: 1.1rem;
-      text-shadow: 1px 1px 3px #000;
-    }
-    #loading {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      background: #111;
-      font-size: 2rem;
-      z-index: 20;
-    }
-    #error {
-      position: absolute;
-      inset: 0;
-      display: none;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      background: #300;
-      font-size: 1.6rem;
-      color: #ff6666;
-      z-index: 20;
-      padding: 20px;
-      text-align: center;
-    }
+    body { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .card { background: rgba(255, 255, 255, 0.95); }
   </style>
 </head>
-<body>
+<body class="min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-3xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-5xl font-bold text-white mb-2 flex items-center justify-center gap-3">
+        <i class="fas fa-bolt text-yellow-300"></i>
+        Kahoot Cheat
+      </h1>
+      <p class="text-white/80 text-lg">Enter Quiz UUID to reveal all answers</p>
+    </div>
 
-<div id="ui">
-  GoldSrc via Xash3D • Press ESC to release mouse • WASD + mouse to play
-</div>
+    <!-- Input Card -->
+    <div class="card rounded-3xl shadow-2xl p-8 mb-6">
+      <div class="flex gap-3">
+        <input
+          type="text"
+          id="quizId"
+          placeholder="Paste Quiz UUID here..."
+          class="flex-1 px-6 py-4 text-lg border border-gray-300 rounded-2xl focus:outline-none focus:border-purple-500 transition"
+        >
+        <button
+          onclick="fetchKahoot()"
+          id="fetchBtn"
+          class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-2xl hover:scale-105 transition flex items-center gap-2"
+        >
+          <i class="fas fa-search"></i>
+          Fetch
+        </button>
+      </div>
+    </div>
 
-<div id="loading">
-  <div>Loading engine & game data…</div>
-  <div style="margin-top:20px; font-size:1.1rem; opacity:0.8;">
-    First load can take 30–180 seconds depending on connection
+    <!-- Loading -->
+    <div id="loading" class="hidden text-center py-8 text-white">
+      <i class="fas fa-spinner fa-spin text-4xl mb-4"></i>
+      <p class="text-xl">Fetching quiz data...</p>
+    </div>
+
+    <!-- Results -->
+    <div id="results" class="hidden">
+      <div class="card rounded-3xl shadow-2xl p-8">
+        <h2 id="quizTitle" class="text-3xl font-bold text-gray-800 mb-2"></h2>
+        <p id="quizDescription" class="text-gray-600 mb-8"></p>
+        <div id="questions" class="space-y-8"></div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div id="error" class="hidden bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-2xl text-center">
+      <i class="fas fa-exclamation-circle"></i>
+      <span id="errorMsg" class="ml-2"></span>
+    </div>
   </div>
-</div>
 
-<div id="error">
-  <div style="font-size:2.2rem; margin-bottom:20px;">Something went wrong</div>
-  <div id="errorMsg"></div>
-</div>
+  <script>
+    async function fetchKahoot() {
+      const quizId = document.getElementById('quizId').value.trim();
+      const loading = document.getElementById('loading');
+      const results = document.getElementById('results');
+      const error = document.getElementById('error');
 
-<canvas id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+      if (!quizId) {
+        showError("Please enter a Quiz UUID");
+        return;
+      }
 
-<script>
-// =======================================================
-//   CHANGE ONLY THESE TWO LINES WITH YOUR OWN LINKS
-// =======================================================
-const GAME_DATA_URL = "https://files.catbox.moe/yourfiles.data";     // ← your hosted .data file
-const GAME_PRELOAD_JS = "https://files.catbox.moe/yourpreload.js";   // ← if you have a custom .js, otherwise leave as fallback
+      results.classList.add('hidden');
+      error.classList.add('hidden');
+      loading.classList.remove('hidden');
 
-// Fallback to public preloader if you don't have custom .js
-const FALLBACK_PRELOAD = "https://x8bitrain.github.io/webXash/xash3d.js";
+      try {
+        const proxies = [
+          "https://api.allorigins.win/raw?url=",
+          "https://proxy.killcors.com/?url=",
+          "https://cors.x2u.in/?url=",
+          "https://corsproxy.org/?"
+        ];
 
-// Engine configuration
-window.Module = {
-  canvas: document.getElementById('canvas'),
-  print:   txt => console.log("[Xash3D]", txt),
-  printErr: txt => console.error("[Xash3D Error]", txt),
+        let data = null;
+        let success = false;
 
-  preRun:   [],
-  postRun:  [() => document.getElementById('loading').style.display = 'none'],
+        for (const proxy of proxies) {
+          try {
+            const targetUrl = `https://create.kahoot.it/rest/kahoots/${quizId}`;
+            const response = await fetch(proxy + encodeURIComponent(targetUrl));
+            
+            if (response.ok) {
+              data = await response.json();
+              success = true;
+              break;
+            }
+          } catch (e) {
+            continue;
+          }
+        }
 
-  // Tell Emscripten to load your .data file from URL
-  locateFile: function(path, scriptDirectory) {
-    if (path.endsWith('.data')) return GAME_DATA_URL;
-    return scriptDirectory + path;
-  },
+        if (!success || !data) {
+          throw new Error("All proxies failed");
+        }
 
-  // Optional: arguments passed to engine
-  arguments: [
-    // "-dev", "1",               // developer mode
-    // "+map", "de_dust2",        // start map (if you want auto-load)
-    // "+sv_cheats", "1"
-  ]
-};
+        displayQuiz(data);
+      } catch (err) {
+        console.error(err);
+        showError("Could not fetch quiz. Make sure the UUID is correct and the quiz is public.");
+      } finally {
+        loading.classList.add('hidden');
+      }
+    }
 
-// Show loading
-const loading = document.getElementById('loading');
-const errorDiv = document.getElementById('error');
-const errorMsg = document.getElementById('errorMsg');
+    function displayQuiz(data) {
+      document.getElementById('results').classList.remove('hidden');
+      
+      document.getElementById('quizTitle').textContent = data.title || "Untitled Quiz";
+      document.getElementById('quizDescription').textContent = data.description || "";
 
-// Load the preloader script
-const preloadSrc = GAME_PRELOAD_JS || FALLBACK_PRELOAD;
+      const questionsContainer = document.getElementById('questions');
+      questionsContainer.innerHTML = '';
 
-const script = document.createElement('script');
-script.src = preloadSrc;
-script.async = true;
+      data.questions.forEach((q, index) => {
+        const qDiv = document.createElement('div');
+        qDiv.className = "border border-gray-200 rounded-2xl p-6 hover:border-purple-300 transition";
 
-script.onload = () => {
-  loading.innerHTML = "Engine loaded… downloading game data…<br>(this can take a while)";
-};
+        let optionsHTML = q.choices.map((choice, i) => {
+          const isCorrect = choice.correct === true;
+          return `
+            <div class="flex items-center gap-3 p-4 rounded-xl ${isCorrect ? 'bg-green-100 border-2 border-green-500' : 'bg-gray-50'}">
+              <span class="font-mono text-sm text-gray-500 w-6">${String.fromCharCode(65 + i)}.</span>
+              <span class="flex-1">${choice.answer}</span>
+              ${isCorrect ? '<i class="fas fa-check-circle text-green-600 text-xl"></i>' : ''}
+            </div>
+          `;
+        }).join('');
 
-script.onerror = (e) => {
-  loading.style.display = 'none';
-  errorDiv.style.display = 'flex';
-  errorMsg.innerHTML = `
-    Failed to load Xash3D engine.<br><br>
-    <small>Check console (F12) for details.<br>
-    Make sure your .js / .data links are correct and publicly accessible.</small>
-  `;
-  console.error("Preload script failed:", e);
-};
+        qDiv.innerHTML = `
+          <div class="flex items-start gap-4">
+            <div class="bg-purple-100 text-purple-700 font-bold w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0">
+              ${index + 1}
+            </div>
+            <div class="flex-1">
+              <p class="text-xl font-semibold text-gray-800 mb-4">${q.question}</p>
+              <div class="grid gap-3">
+                ${optionsHTML}
+              </div>
+            </div>
+          </div>
+        `;
+        questionsContainer.appendChild(qDiv);
+      });
+    }
 
-document.body.appendChild(script);
-</script>
+    function showError(msg) {
+      document.getElementById('error').classList.remove('hidden');
+      document.getElementById('errorMsg').textContent = msg;
+    }
+
+    // Enter key support
+    document.getElementById('quizId').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') fetchKahoot();
+    });
+  </script>
 </body>
 </html>
